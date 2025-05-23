@@ -1,0 +1,21 @@
+{
+	"name": "note-app",
+	"version": "1.0.1",
+	"description": "This is simple NodeJS Application",
+	"keywords": [
+		"node",
+		"js"
+	],
+	"license": "ISC",
+	"author": "Oleg Portnov <drose1@list.ru>",
+	"type": "module",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"dependencies": {
+		"@types/yargs": "^17.0.33",
+		"chalk": "^4.1.2",
+		"yargs": "^17.7.2"
+	}
+}
