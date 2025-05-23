@@ -43,4 +43,4 @@ async function printNotes() {
 	});
 }
 
-export { addNote, printNotes, removeNote };
+export { addNote, printNotes, removeNote, getNotes };
