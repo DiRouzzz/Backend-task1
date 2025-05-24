@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { addNote, getNotes, removeNote } from './notes.controller.js';
+import { addNote, getNotes, removeNote, editNote } from './notes.controller.js';
 import express from 'express';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,6 +13,8 @@ app.set('view engine', 'ejs');
 app.set('views', 'pages');
 
 app.use(express.static(path.resolve(__dirname, 'public')));
+
+app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
 
@@ -31,6 +33,16 @@ app.delete('/:id', async (req, res) => {
 
 	res.render('index', {
 		title: 'Express App',
+		notes: await getNotes(),
+		created: false,
+	});
+});
+
+app.put('/:id', async (req, res) => {
+	await editNote(req.params.id, req.body);
+
+	res.render('index', {
+		title: 'Express edit',
 		notes: await getNotes(),
 		created: false,
 	});

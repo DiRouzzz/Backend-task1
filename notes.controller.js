@@ -43,4 +43,13 @@ async function printNotes() {
 	});
 }
 
-export { addNote, printNotes, removeNote, getNotes };
+async function editNote(id, req) {
+	const notes = await getNotes();
+	const editNote = notes.map(note => (note.id === id ? req : note));
+	await fs.writeFile(notesPath, JSON.stringify(editNote));
+	console.log(chalk.blue.inverse('Note edited!'));
+	
+
+}
+
+export { addNote, printNotes, removeNote, getNotes, editNote };
