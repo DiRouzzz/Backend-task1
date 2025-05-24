@@ -39,6 +39,8 @@ app.delete('/:id', async (req, res) => {
 });
 
 app.put('/:id', async (req, res) => {
+	
+	
 	await editNote(req.params.id, req.body);
 
 	res.render('index', {
