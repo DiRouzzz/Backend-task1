@@ -1,6 +1,11 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { addNote, printNotes, removeNote } from './notes.controller.js';
+import {
+	addNote,
+	printNotes,
+	removeNote,
+	editNote,
+} from './notes.controller.js';
 
 const version = '1.0.1';
 
@@ -39,6 +44,25 @@ yargs(hideBin(process.argv))
 		},
 		async handler({ id }) {
 			removeNote(id);
+		},
+	})
+	.command({
+		command: 'edit',
+		describe: 'Edit note by id',
+		builder: {
+			id: {
+				type: 'string',
+				describe: 'Note id',
+				demandOption: true,
+			},
+			title: {
+				type: 'string',
+				describe: 'Note title',
+				demandOption: true,
+			},
+		},
+		async handler({ id, title }) {
+			editNote(id, title);
 		},
 	})
 	.parse();
