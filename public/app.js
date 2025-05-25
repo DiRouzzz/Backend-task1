@@ -1,38 +1,57 @@
-document.addEventListener('click', e => {
-	const id = e.target.dataset.id;
+document.addEventListener('click', event => {
+	if (event.target.dataset.type === 'remove') {
+		const id = event.target.dataset.id;
 
-	if (e.target.dataset.type === 'remove') {
 		remove(id).then(() => {
-			e.target.closest('li').remove();
+			event.target.closest('li').remove();
 		});
 	}
 
-	if (e.target.dataset.type === 'edit') {
-		edit(id);
+	if (event.target.dataset.type === 'edit') {
+		const $task = event.target.closest('li');
+		const id = event.target.dataset.id;
+		const title = event.target.dataset.title;
+		const initialHtml = $task.innerHTML;
+
+		$task.innerHTML = `
+      <input type="text" value="${title}">
+      <div>
+        <button class="btn btn-success" data-type="save">Сохранить</button>
+        <button class="btn btn-danger" data-type="cancel">Отменить</button>
+      </div>
+    `;
+
+		const taskListener = ({ target }) => {
+			if (target.dataset.type === 'cancel') {
+				$task.innerHTML = initialHtml;
+				$task.removeEventListener('click', taskListener);
+			}
+			if (target.dataset.type === 'save') {
+				const title = $task.querySelector('input').value;
+				update({ title, id }).then(() => {
+					$task.innerHTML = initialHtml;
+					$task.querySelector('span').innerText = title;
+					$task.querySelector('[data-type=edit]').dataset.title = title;
+					$task.removeEventListener('click', taskListener);
+				});
+			}
+		};
+
+		$task.addEventListener('click', taskListener);
 	}
 });
 
-async function remove(id) {
-	await fetch(`/${id}`, {
-		method: 'DELETE',
+async function update(newNote) {
+	await fetch(`/${newNote.id}`, {
+		method: 'PUT',
+		headers: {
+			Accept: 'application/json',
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(newNote),
 	});
 }
 
-async function edit(id) {
-	const promptNote = prompt('Введите новое значение...');
-	if (!promptNote) {
-		return;
-	}
-
-	const response = await fetch(`/${id}`, {
-		method: 'PUT',
-		headers: { 'Content-Type': 'application/json;charset=utf-8' },
-		body: JSON.stringify({ title: promptNote.trim(), id }),
-	});
-
-	if (response.ok) {
-		const li = document.querySelector(`li[data-id="${id}"]`);
-		const span = li.querySelector('.note-title');
-		span.textContent = promptNote.trim();
-	}
+async function remove(id) {
+	await fetch(`/${id}`, { method: 'DELETE' });
 }

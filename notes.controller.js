@@ -1,55 +1,25 @@
-import fs from 'fs/promises';
-import path from 'path';
 import chalk from 'chalk';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const notesPath = path.join(__dirname, 'db.json');
+import { Note } from './models/Note.js';
 
 async function addNote(title) {
-	const notes = await getNotes();
-
-	const note = {
-		title,
-		id: Date.now().toString(),
-	};
-
-	notes.push(note);
-
-	await fs.writeFile(notesPath, JSON.stringify(notes));
+	await Note.create({ title });
 	console.log(chalk.green.inverse('Note was added!'));
 }
 
 async function removeNote(id) {
-	const notes = await getNotes();
-	const filters = notes.filter(note => note.id !== id);
-
-	await fs.writeFile(notesPath, JSON.stringify(filters));
-	console.log(chalk.yellow.inverse('Note was remove!'));
+	await Note.deleteOne({ _id: id });
+	console.log(chalk.yellow.inverse('Note was remove!', id));
 }
 
 async function getNotes() {
-	const notes = await fs.readFile(notesPath, { encoding: 'utf-8' });
-	return Array.isArray(JSON.parse(notes)) ? JSON.parse(notes) : [];
+	const notes = await Note.find();
+
+	return notes;
 }
 
-async function printNotes() {
-	const notes = await getNotes();
-	console.log(chalk.bgBlue('Here is the list of notes:'));
-	notes.forEach(({ id, title }) => {
-		console.log(chalk.blue(id, title));
-	});
+async function updateNote(noteData) {
+	await Note.updateOne({ _id: noteData.id }, { title: noteData.title });
+	console.log(chalk.blue.inverse('Note edited!', noteData.id));
 }
 
-async function editNote(id, req) {
-	const notes = await getNotes();
-	const editNote = notes.map(note => (note.id === id ? req : note));
-	await fs.writeFile(notesPath, JSON.stringify(editNote));
-	console.log(chalk.blue.inverse('Note edited!'));
-	
-
-}
-
-export { addNote, printNotes, removeNote, getNotes, editNote };
+export { addNote, removeNote, getNotes, updateNote };
