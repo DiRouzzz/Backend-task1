@@ -6,6 +6,11 @@ export const auth = (req, res, next) => {
 
 	try {
 		const verifyResult = jwt.verify(token, CONSTANTS.JWT_SECRET);
+
+		req.user = {
+			email: verifyResult.email,
+		};
+    
 		next();
 	} catch (error) {
 		res.redirect('/login');

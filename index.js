@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import chalk from 'chalk';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -69,7 +70,7 @@ app.post('/login', async (req, res) => {
 	try {
 		const token = await loginUser(req.body.email, req.body.password);
 
-		res.cookie('token', token);
+		res.cookie('token', token, { httpOnly: true });
 		res.redirect('/');
 	} catch (e) {
 		res.render('login', {
@@ -79,46 +80,78 @@ app.post('/login', async (req, res) => {
 	}
 });
 
-app.use(auth)
+app.get('/logout', (req, res) => {
+	res.cookie('token', '', { httpOnly: true });
+	res.redirect('/login');
+});
+
+app.use(auth);
 
 app.get('/', async (req, res) => {
 	res.render('index', {
 		title: 'Express App',
 		notes: await getNotes(),
+		userEmail: req.user.email,
 		created: false,
 		error: false,
 	});
 });
 
 app.delete('/:id', async (req, res) => {
-	await removeNote(req.params.id);
-
-	res.render('index', {
-		title: 'Express App',
-		notes: await getNotes(),
-		created: false,
-		error: false,
-	});
-});
-
-app.put('/:id', async (req, res) => {
-	await updateNote({ id: req.params.id, title: req.body.title });
-
-	res.render('index', {
-		title: 'Express edit',
-		notes: await getNotes(),
-		created: false,
-		error: false,
-	});
-});
-
-app.post('/', async (req, res) => {
 	try {
-		await addNote(req.body.title);
+		await removeNote(req.params.id, req.user.email);
 
 		res.render('index', {
 			title: 'Express App',
 			notes: await getNotes(),
+			userEmail: req.user.email,
+			created: false,
+			error: false,
+		});
+	} catch (error) {
+		res.render('index', {
+			title: 'Express App',
+			notes: await getNotes(),
+			userEmail: req.user.email,
+			created: false,
+			error: error.message,
+		});
+	}
+});
+
+app.put('/:id', async (req, res) => {
+	try {
+		await updateNote(
+			{ id: req.params.id, title: req.body.title },
+			req.user.email
+		);
+
+		res.render('index', {
+			title: 'Express edit',
+			notes: await getNotes(),
+			userEmail: req.user.email,
+			created: false,
+			error: false,
+		});
+	} catch (error) {
+		res.render('index', {
+			title: 'Express edit',
+			notes: await getNotes(),
+			userEmail: req.user.email,
+			created: false,
+			error: e.message,
+		});
+	}
+});
+
+app.post('/', async (req, res) => {
+	try {
+		await addNote(req.body.title, req.user.email);
+
+		res.render('index', {
+			title: 'Express App',
+			notes: await getNotes(),
+			userEmail: req.user.email,
 			created: true,
 			error: false,
 		});
@@ -127,18 +160,15 @@ app.post('/', async (req, res) => {
 		res.render('index', {
 			title: 'Express App',
 			notes: await getNotes(),
+			userEmail: req.user.email,
 			created: false,
 			error: true,
 		});
 	}
 });
 
-mongoose
-	.connect(
-		'mongodb+srv://drose1254:SeM44590gnW@cluster1.dmel20l.mongodb.net/notes?retryWrites=true&w=majority&appName=Cluster1'
-	)
-	.then(() => {
-		app.listen(port, () => {
-			console.log(chalk.green(`Server has been started ${port}...`));
-		});
+mongoose.connect(process.env.MONGO_CONNECTION_STRING).then(() => {
+	app.listen(port, () => {
+		console.log(chalk.green(`Server has been started ${port}...`));
 	});
+});
