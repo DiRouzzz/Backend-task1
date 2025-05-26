@@ -3,12 +3,16 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
 import mongoose from 'mongoose';
+import cookieParser from 'cookie-parser';
+import { auth } from './middlewares/auth.js';
 import {
 	addNote,
 	getNotes,
 	removeNote,
 	updateNote,
 } from './notes.controller.js';
+
+import { addUser, loginUser } from './user.controller.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,10 +25,61 @@ app.set('views', 'pages');
 app.use(express.static(path.resolve(__dirname, 'public')));
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use(express.urlencoded({ extended: true }));
 
 const port = 3000;
+
+app.get('/register', async (req, res) => {
+	res.render('register', {
+		title: 'Express App',
+		error: undefined,
+	});
+});
+
+app.post('/register', async (req, res) => {
+	try {
+		await addUser(req.body.email, req.body.password);
+		res.redirect('/login');
+	} catch (e) {
+		if (e.code === 11000) {
+			res.render('register', {
+				title: 'Express App',
+				error: 'Email is already registered',
+			});
+
+			return;
+		}
+		res.render('register', {
+			title: 'Express App',
+			error: e.message,
+		});
+	}
+});
+
+app.get('/login', async (req, res) => {
+	res.render('login', {
+		title: 'Express App',
+		error: undefined,
+	});
+});
+
+app.post('/login', async (req, res) => {
+	try {
+		const token = await loginUser(req.body.email, req.body.password);
+
+		res.cookie('token', token);
+		res.redirect('/');
+	} catch (e) {
+		res.render('login', {
+			title: 'Express App',
+			error: e.message,
+		});
+	}
+});
+
+app.use(auth)
 
 app.get('/', async (req, res) => {
 	res.render('index', {
