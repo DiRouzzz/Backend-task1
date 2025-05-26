@@ -1,55 +1,36 @@
-import fs from 'fs/promises';
-import path from 'path';
 import chalk from 'chalk';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { Note } from './models/Note.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const notesPath = path.join(__dirname, 'db.json');
-
-async function addNote(title) {
-	const notes = await getNotes();
-
-	const note = {
-		title,
-		id: Date.now().toString(),
-	};
-
-	notes.push(note);
-
-	await fs.writeFile(notesPath, JSON.stringify(notes));
+async function addNote(title, owner) {
+	await Note.create({ title, owner });
 	console.log(chalk.green.inverse('Note was added!'));
 }
 
-async function removeNote(id) {
-	const notes = await getNotes();
-	const filters = notes.filter(note => note.id !== id);
-
-	await fs.writeFile(notesPath, JSON.stringify(filters));
-	console.log(chalk.yellow.inverse('Note was remove!'));
+async function removeNote(id, owner) {
+	const result = await Note.deleteOne({ _id: id, owner });
+	if (result.matchedCount === 0) {
+		throw new Error('No note to remove');
+	}
+	console.log(chalk.yellow.inverse('Note was remove!', id));
 }
 
 async function getNotes() {
-	const notes = await fs.readFile(notesPath, { encoding: 'utf-8' });
-	return Array.isArray(JSON.parse(notes)) ? JSON.parse(notes) : [];
+	const notes = await Note.find();
+
+	return notes;
 }
 
-async function printNotes() {
-	const notes = await getNotes();
-	console.log(chalk.bgBlue('Here is the list of notes:'));
-	notes.forEach(({ id, title }) => {
-		console.log(chalk.blue(id, title));
-	});
-}
-
-async function editNote(id, title) {
-	const notes = await getNotes();
-	const noteEdit = notes.map(note =>
-		note.id === id ? { ...note, title } : note
+async function updateNote(noteData, owner) {
+	const result = await Note.updateOne(
+		{ _id: noteData.id, owner },
+		{ title: noteData.title }
 	);
-	await fs.writeFile(notesPath, JSON.stringify(noteEdit));
-	console.log(chalk.yellow.inverse('Note edited!'));
+
+	if (result.matchedCount === 0) {
+		throw new Error('No note to edit');
+	}
+
+	console.log(chalk.blue.inverse('Note edited!', noteData.id));
 }
 
-export { addNote, printNotes, removeNote, editNote };
+export { addNote, removeNote, getNotes, updateNote };
